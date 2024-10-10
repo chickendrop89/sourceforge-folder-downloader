@@ -63,10 +63,6 @@ function http_status_check(){
         "200")
             coloredOutput "Source check returned a valid HTTP status code" "green"
         ;;
-        "301")
-            coloredOutput "Source check returned HTTP status code 301, is HTTPS protocol used? Fixing" "yellow"
-            SOURCE="${SOURCE//http/https}"
-        ;;
         "404")
             coloredOutput "Source check returned HTTP status code 404, the destination directory does not exist" "red"
             exit 1
@@ -78,7 +74,7 @@ function http_status_check(){
 }
 
 function sourceforge_source_download(){
-    REQUEST_URL=$(curl -m 120 -s "$SOURCE" | grep files_name_h | grep -o 'https://[^"]*')
+    REQUEST_URL=$(curl -m 120 -Ls "$SOURCE" | grep files_name_h | grep -o 'https://[^"]*')
 
     for DOWNLOAD_URL in $REQUEST_URL
         do
