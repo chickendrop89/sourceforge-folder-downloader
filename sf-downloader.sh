@@ -86,7 +86,11 @@ function sourceforge_source_download(){
             REQUEST_DIRNAME=$(cutUrl "$DOWNLOAD_URL" 3)
 
             coloredOutput "Downloading $REQUEST_FILENAME from $REQUEST_DIRNAME" "cyan"
-            curl "$DOWNLOAD_URL" --tcp-fastopen --create-dirs -m 120 -L -o "$OUTPUT_DIRECTORY/$REQUEST_FILENAME"
+            curl "$DOWNLOAD_URL" \
+             --retry 3 --retry-all-errors \
+             --tcp-fastopen --create-dirs -m 120 -L -o \
+            "$OUTPUT_DIRECTORY/$REQUEST_FILENAME"
+            
             coloredOutput
     done
 }
