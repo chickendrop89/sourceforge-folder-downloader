@@ -70,7 +70,7 @@ http_status_check(){
 }
 
 sourceforge_source_download(){
-    REQUEST_URL=$(curl -m 300 -Ls "$SOURCE" | grep files_name_h | grep -o 'https://[^"]*')
+    REQUEST_URL=$(curl -m 120 -Ls "$SOURCE" | grep files_name_h | grep -o 'https://[^"]*')
 
     for DOWNLOAD_URL in $REQUEST_URL
         do
@@ -84,7 +84,7 @@ sourceforge_source_download(){
             coloredOutput "Downloading $REQUEST_FILENAME from $REQUEST_DIRNAME" "cyan"
             curl "$DOWNLOAD_URL" \
                     --retry 3 --retry-all-errors \
-                    --tcp-fastopen --create-dirs -m 120 -L -o \
+                    --tcp-fastopen --create-dirs -m 60 -L -o \
             "$OUTPUT_DIRECTORY/$REQUEST_FILENAME"
             
             coloredOutput
