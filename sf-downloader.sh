@@ -21,27 +21,23 @@ if [ -n "$2" ]
     then OUTPUT_DIRECTORY="$2"
 fi
 
-# Case-Insensitive regex matching
-shopt -s nocasematch
-
-if [[ "$1" =~ "help" ]] || [ "$#" -eq 0 ]; 
-    then 
+case "$1" in
+    *help*|*HELP*|"")
         echo "usage: sf-downloader.sh <sourceforge folder url> [output directory]";
-    exit
-fi
+        exit 1
+        ;;
+esac
 
-# Strip URL path encoding
-function urlDecode(){ 
-    : "${*//+/ }"; 
-    echo -e "${_//%/\\x}"; 
+urlDecode() {
+    echo "${1//+/ //%/\\x}"
 }
 
 # Cut URL path into segments
-function cutUrl(){
+cutUrl(){
     echo "$1" | rev | cut -d/ -f "$2" | rev
 }
 
-function coloredOutput(){
+coloredOutput(){
     case $2 in
         "red")
             printf "\e[0;31m %s \e[0m \n" "$1" ;;
@@ -56,7 +52,7 @@ function coloredOutput(){
     esac
 }
 
-function http_status_check(){
+http_status_check(){
     SOURCE_STATUS=$(curl -o /dev/null -m 10 --silent --head --write-out '%{http_code}' "$SOURCE")
 
     case $SOURCE_STATUS in
@@ -73,7 +69,7 @@ function http_status_check(){
     esac
 }
 
-function sourceforge_source_download(){
+sourceforge_source_download(){
     REQUEST_URL=$(curl -m 300 -Ls "$SOURCE" | grep files_name_h | grep -o 'https://[^"]*')
 
     for DOWNLOAD_URL in $REQUEST_URL
@@ -87,8 +83,8 @@ function sourceforge_source_download(){
 
             coloredOutput "Downloading $REQUEST_FILENAME from $REQUEST_DIRNAME" "cyan"
             curl "$DOWNLOAD_URL" \
-             --retry 3 --retry-all-errors \
-             --tcp-fastopen --create-dirs -m 120 -L -o \
+                    --retry 3 --retry-all-errors \
+                    --tcp-fastopen --create-dirs -m 120 -L -o \
             "$OUTPUT_DIRECTORY/$REQUEST_FILENAME"
             
             coloredOutput
