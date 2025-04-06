@@ -72,6 +72,11 @@ http_status_check(){
 sourceforge_source_download(){
     REQUEST_URL=$(curl -m 120 -Ls "$SOURCE" | grep files_name_h | grep -o 'https://[^"]*')
 
+    if [ -z "$REQUEST_URL" ];
+        then
+            coloredOutput "Couldn't find any file names in this URL" "red"
+    fi
+
     for DOWNLOAD_URL in $REQUEST_URL
         do
             # Cut the second segment from end, which should contain the filename
