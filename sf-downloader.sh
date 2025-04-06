@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-SOURCE="$1";
+SOURCE="$1"
 OUTPUT_DIRECTORY="$(pwd)"
 
 # Check if there is a second argument/parameter
@@ -23,76 +23,86 @@ fi
 
 case "$1" in
     *help*|*HELP*|"")
-        echo "usage: sf-downloader.sh <sourceforge folder url> [output directory]";
+        echo "usage: sf-downloader.sh <sourceforge folder url> [output directory]"
         exit 1
         ;;
 esac
 
-urlDecode() {
-    echo "${1//+/ //%/\\x}"
+# Wrapper for curl with common arguments
+curl_common() {
+    URL="$1"
+    shift
+
+    curl "$URL" \
+        --retry 3 \
+        --retry-all-errors \
+        --compressed \
+        --connect-timeout 15 \
+        -L \
+        "$@"
 }
 
 # Cut URL path into segments
-cutUrl(){
+cut_url(){
     echo "$1" | rev | cut -d/ -f "$2" | rev
 }
 
-coloredOutput(){
-    case $2 in
-        "red")
-            printf "\e[0;31m %s \e[0m \n" "$1" ;;
-        "yellow")
-            printf "\e[0;33m %s \e[0m \n" "$1" ;;
-        "green")
-            printf "\e[0;32m %s \e[0m \n" "$1" ;;
-        "cyan")
-            printf "\e[0;36m %s \e[0m \n" "$1" ;;
-        *)
-            printf "\n"
+colored_output() {
+    MESSAGE="$1"
+    COLOR="$2"
+
+    case "$COLOR" in
+        red)    printf "\033[31m%s\033[0m\n" "$MESSAGE"; exit 1 ;;
+        yellow) printf "\033[33m%s\033[0m\n" "$MESSAGE" ;;
+        green)  printf "\033[32m%s\033[0m\n" "$MESSAGE" ;;
+        cyan)   printf "\033[36m%s\033[0m\n" "$MESSAGE" ;;
+        *)      printf "\n" ;;
     esac
 }
 
-http_status_check(){
-    SOURCE_STATUS=$(curl -o /dev/null -m 10 --silent --head --write-out '%{http_code}' "$SOURCE")
-
-    case $SOURCE_STATUS in
-        "200")
-            coloredOutput "Source check returned a valid HTTP status code" "green"
-        ;;
-        "404")
-            coloredOutput "Source check returned HTTP status code 404, the destination directory does not exist" "red"
-            exit 1
-        ;;
+# Check HTTP status of source URL before proceeding
+http_status_check() {
+    SOURCE_STATUS=$(curl_common "$SOURCE" -o /dev/null -s --head --write-out '%{http_code}')
+    
+    case "$SOURCE_STATUS" in
+        200)
+            colored_output "Source check returned a valid HTTP status code" "green"
+            ;;
+        404)
+            colored_output "Source check returned HTTP status code 404, the destination directory does not exist" "red"
+            ;;
         *)
-            coloredOutput "Source check returned an unusual HTTP status code ($SOURCE_STATUS). Not continuing" "red"
-            exit 1
+            colored_output "Source check returned an unusual HTTP status code ($SOURCE_STATUS). Not continuing" "red"
+            ;;
     esac
 }
 
 sourceforge_source_download(){
-    REQUEST_URL=$(curl -m 120 -Ls "$SOURCE" | grep files_name_h | grep -o 'https://[^"]*')
+    REQUEST_URL=$(curl_common "$SOURCE" -s | grep files_name_h | sed -n 's/.*\(https:[^"]*\).*/\1/p')
 
     if [ -z "$REQUEST_URL" ];
         then
-            coloredOutput "Couldn't find any file names in this URL" "red"
+            colored_output "Couldn't find any file names in this URL" "red"
     fi
 
     for DOWNLOAD_URL in $REQUEST_URL
         do
             # Cut the second segment from end, which should contain the filename
-            REQUEST_FILENAME=$(cutUrl "$DOWNLOAD_URL" 2)
-            REQUEST_FILENAME=$(urlDecode "$REQUEST_FILENAME")
+            REQUEST_FILENAME=$(cut_url "$DOWNLOAD_URL" 2)
 
             # Cut the third segment from end, which should contain the source directory
-            REQUEST_DIRNAME=$(cutUrl "$DOWNLOAD_URL" 3)
+            REQUEST_DIRNAME=$(cut_url "$DOWNLOAD_URL" 3)
 
-            coloredOutput "Downloading $REQUEST_FILENAME from $REQUEST_DIRNAME" "cyan"
-            curl "$DOWNLOAD_URL" \
-                    --retry 3 --retry-all-errors \
-                    --tcp-fastopen --create-dirs -m 60 -L -o \
-            "$OUTPUT_DIRECTORY/$REQUEST_FILENAME"
-            
-            coloredOutput
+            colored_output "Downloading $REQUEST_FILENAME from $REQUEST_DIRNAME" "cyan"
+            if ! curl_common "$DOWNLOAD_URL" \
+                --create-dirs \
+                --tcp-fastopen \
+                -o "$OUTPUT_DIRECTORY/$REQUEST_FILENAME" 
+                then
+                    colored_output "Failed to download $REQUEST_FILENAME" "red"
+            fi
+
+        colored_output "Successfully downloaded $REQUEST_FILENAME" "green"
     done
 }
 
