@@ -10,10 +10,10 @@ sf-downloader.sh <sourceforge folder url> [output directory]
 ---
 
 - `<required> sourceforge folder url`
-    - example: `https://sourceforge.net/projects/orangefox-device-xiaomi-tapas/files/2023-12-09`
+    - example: `https://sourceforge.net/projects/winscp/files/WinSCP/2.0%20beta/`
 
 - `[optional] output directory`
-    - example: `orangefox-tapas`
+    - example: `winscp-2.0`
 
 ## Note:
 - `bash/ksh/zsh/busybox-ash/dash` are confirmed to work.
