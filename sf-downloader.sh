@@ -113,7 +113,7 @@ sourceforge_source_download() {
 
     for subfolder in $subfolders
         do
-            sourceforge_source_download "$sf_files_page_url/$subfolder"
+            sourceforge_source_download "$SOURCE/$subfolder"
     done
 }
 
