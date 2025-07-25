@@ -78,31 +78,31 @@ http_status_check() {
 }
 
 sourceforge_source_download(){
-    REQUEST_URL=$(curl_common "$SOURCE" -s | grep files_name_h | sed -n 's/.*\(https:[^"]*\).*/\1/p')
+    DOWNLOAD_URLS=$(curl_common "$SOURCE" -s | grep files_name_h | sed -n 's/.*\(https:[^"]*\).*/\1/p')
 
-    if [ -z "$REQUEST_URL" ];
+    if [ -z "$DOWNLOAD_URLS" ];
         then
             colored_output "Couldn't find any file names in this URL" "red"
     fi
 
-    for DOWNLOAD_URL in $REQUEST_URL
+    for DOWNLOAD_URL in $DOWNLOAD_URLS
         do
             # Cut the second segment from end, which should contain the filename
-            REQUEST_FILENAME=$(cut_url "$DOWNLOAD_URL" 2)
+            DOWNLOAD_FILENAME=$(cut_url "$DOWNLOAD_URL" 2)
 
             # Cut the third segment from end, which should contain the source directory
-            REQUEST_DIRNAME=$(cut_url "$DOWNLOAD_URL" 3)
+            DOWNLOAD_DIRNAME=$(cut_url "$DOWNLOAD_URL" 3)
 
-            colored_output "Downloading $REQUEST_FILENAME from $REQUEST_DIRNAME" "cyan"
+            colored_output "Downloading $DOWNLOAD_FILENAME from $DOWNLOAD_DIRNAME" "cyan"
             if ! curl_common "$DOWNLOAD_URL" \
                 --create-dirs \
                 --tcp-fastopen \
-                -o "$OUTPUT_DIRECTORY/$REQUEST_FILENAME" 
+                -o "$OUTPUT_DIRECTORY/$DOWNLOAD_FILENAME"
                 then
-                    colored_output "Failed to download $REQUEST_FILENAME" "red"
+                    colored_output "Failed to download $DOWNLOAD_FILENAME" "red"
             fi
 
-        colored_output "Successfully downloaded $REQUEST_FILENAME" "green"
+        colored_output "Successfully downloaded $DOWNLOAD_FILENAME" "green"
     done
 }
 
