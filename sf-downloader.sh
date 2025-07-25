@@ -30,6 +30,7 @@ esac
 
 # Wrapper for curl with common arguments
 curl_common() {
+    local URL
     URL="$1"
     shift
 
@@ -48,6 +49,7 @@ cut_url(){
 }
 
 colored_output() {
+    local MESSAGE COLOR
     MESSAGE="$1"
     COLOR="$2"
 
@@ -62,6 +64,7 @@ colored_output() {
 
 # Check HTTP status of source URL before proceeding
 http_status_check() {
+    local SOURCE_STATUS
     SOURCE_STATUS=$(curl_common "$SOURCE" -o /dev/null -s --head --write-out '%{http_code}')
     
     case "$SOURCE_STATUS" in
@@ -77,32 +80,41 @@ http_status_check() {
     esac
 }
 
-sourceforge_source_download(){
-    DOWNLOAD_URLS=$(curl_common "$SOURCE" -s | grep files_name_h | sed -n 's/.*\(https:[^"]*\).*/\1/p')
+sourceforge_source_download() {
+    local SF_FILES_PAGE_URL SF_FILES_PAGE_H DOWNLOAD_URLS DOWNLOAD_URL DOWNLOAD_FILENAME DOWNLOAD_DIRNAME SUBFOLDERS SUBFOLDER
+    SF_FILES_PAGE_URL="$1"
+    SF_FILES_PAGE_H="$(curl_common "$SF_FILES_PAGE_URL" -s | grep '<th scope="row" headers="files_name_h">')"
+    DOWNLOAD_URLS=$(echo "$SF_FILES_PAGE_H" | sed -n 's|.*"\(https:[^"]*\).*|\1|p')
+    SUBFOLDERS=$(echo "$SF_FILES_PAGE_H" | sed -n 's|.*"/projects/[^/]*/files/\([^"]*\).*|\1|p')
 
     if [ -z "$DOWNLOAD_URLS" ];
         then
-            colored_output "Couldn't find any file names in this URL" "red"
+            colored_output "Couldn't find any file names in this URL: $SF_FILES_PAGE_URL" "red"
     fi
 
     for DOWNLOAD_URL in $DOWNLOAD_URLS
         do
             # Cut the second segment from end, which should contain the filename
-            DOWNLOAD_FILENAME=$(cut_url "$DOWNLOAD_URL" 2)
+            DOWNLOAD_FILENAME=$(cut_url "${DOWNLOAD_URL#$SOURCE}" 2)
 
             # Cut the third segment from end, which should contain the source directory
-            DOWNLOAD_DIRNAME=$(cut_url "$DOWNLOAD_URL" 3)
+            DOWNLOAD_DIRNAME=$(cut_url "${DOWNLOAD_URL#$SOURCE}" 3-)
 
-            colored_output "Downloading $DOWNLOAD_FILENAME from $DOWNLOAD_DIRNAME" "cyan"
+            colored_output "Downloading '$DOWNLOAD_FILENAME' from '$DOWNLOAD_DIRNAME'" "cyan"
             if ! curl_common "$DOWNLOAD_URL" \
                 --create-dirs \
                 --tcp-fastopen \
-                -o "$OUTPUT_DIRECTORY/$DOWNLOAD_FILENAME"
+                -o "$OUTPUT_DIRECTORY/$DOWNLOAD_DIRNAME/$DOWNLOAD_FILENAME"
                 then
                     colored_output "Failed to download $DOWNLOAD_FILENAME" "red"
             fi
 
         colored_output "Successfully downloaded $DOWNLOAD_FILENAME" "green"
+    done
+
+    for SUBFOLDER in $SUBFOLDERS
+        do
+            sourceforge_source_download "$SF_FILES_PAGE_URL/$SUBFOLDER"
     done
 }
 
@@ -111,4 +123,4 @@ sourceforge_source_download(){
 http_status_check
 
 # Download the SourceForge files
-sourceforge_source_download
+sourceforge_source_download "$SOURCE"
