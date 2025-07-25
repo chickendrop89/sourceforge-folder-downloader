@@ -30,11 +30,11 @@ esac
 
 # Wrapper for curl with common arguments
 curl_common() {
-    local URL
-    URL="$1"
+    local url
+    url="$1"
     shift
 
-    curl "$URL" \
+    curl "$url" \
         --retry 3 \
         --retry-all-errors \
         --compressed \
@@ -44,27 +44,26 @@ curl_common() {
 }
 
 # Cut URL path into segments
-cut_url(){
+cut_url() {
     echo "$1" | rev | cut -d/ -f "$2" | rev
 }
 
 colored_output() {
-    local MESSAGE COLOR
-    MESSAGE="$1"
-    COLOR="$2"
+    local message color
+    message="$1"
+    color="$2"
 
-    case "$COLOR" in
-        red)    printf "\033[31m%s\033[0m\n" "$MESSAGE"; exit 1 ;;
-        yellow) printf "\033[33m%s\033[0m\n" "$MESSAGE" ;;
-        green)  printf "\033[32m%s\033[0m\n" "$MESSAGE" ;;
-        cyan)   printf "\033[36m%s\033[0m\n" "$MESSAGE" ;;
+    case "$color" in
+        red)    printf "\033[31m%s\033[0m\n" "$message"; exit 1 ;;
+        yellow) printf "\033[33m%s\033[0m\n" "$message" ;;
+        green)  printf "\033[32m%s\033[0m\n" "$message" ;;
+        cyan)   printf "\033[36m%s\033[0m\n" "$message" ;;
         *)      printf "\n" ;;
     esac
 }
 
 # Check HTTP status of source URL before proceeding
 http_status_check() {
-    local SOURCE_STATUS
     SOURCE_STATUS=$(curl_common "$SOURCE" -o /dev/null -s --head --write-out '%{http_code}')
     
     case "$SOURCE_STATUS" in
@@ -81,40 +80,40 @@ http_status_check() {
 }
 
 sourceforge_source_download() {
-    local SF_FILES_PAGE_URL SF_FILES_PAGE_H DOWNLOAD_URLS DOWNLOAD_URL DOWNLOAD_FILENAME DOWNLOAD_DIRNAME SUBFOLDERS SUBFOLDER
-    SF_FILES_PAGE_URL="$1"
-    SF_FILES_PAGE_H="$(curl_common "$SF_FILES_PAGE_URL" -s | grep '<th scope="row" headers="files_name_h">')"
-    DOWNLOAD_URLS=$(echo "$SF_FILES_PAGE_H" | sed -n 's|.*"\(https:[^"]*\).*|\1|p')
-    SUBFOLDERS=$(echo "$SF_FILES_PAGE_H" | sed -n 's|.*"/projects/[^/]*/files/\([^"]*\).*|\1|p')
+    local sf_files_page_url sf_files_page_h download_urls download_url download_filename download_dirname subfolders subfolder
+    sf_files_page_url="$1"
+    sf_files_page_h="$(curl_common "$sf_files_page_url" -s | grep '<th scope="row" headers="files_name_h">')"
+    download_urls=$(echo "$sf_files_page_h" | sed -n 's|.*"\(https:[^"]*\).*|\1|p')
+    subfolders=$(echo "$sf_files_page_h" | sed -n 's|.*"/projects/[^/]*/files/\([^"]*\).*|\1|p')
 
-    if [ -z "$DOWNLOAD_URLS" ];
+    if [ -z "$download_urls" ];
         then
-            colored_output "Couldn't find any file names in this URL: $SF_FILES_PAGE_URL" "red"
+            colored_output "Couldn't find any file names in this URL: $sf_files_page_url" "red"
     fi
 
-    for DOWNLOAD_URL in $DOWNLOAD_URLS
+    for download_url in $download_urls
         do
             # Cut the second segment from end, which should contain the filename
-            DOWNLOAD_FILENAME=$(cut_url "${DOWNLOAD_URL#$SOURCE}" 2)
+            download_filename=$(cut_url "${download_url#"$SOURCE"}" 2)
 
             # Cut the third segment from end, which should contain the source directory
-            DOWNLOAD_DIRNAME=$(cut_url "${DOWNLOAD_URL#$SOURCE}" 3-)
+            download_dirname=$(cut_url "${download_url#"$SOURCE"}" 3-)
 
-            colored_output "Downloading '$DOWNLOAD_FILENAME' from '$DOWNLOAD_DIRNAME'" "cyan"
-            if ! curl_common "$DOWNLOAD_URL" \
+            colored_output "Downloading '$download_filename' from '$download_dirname'" "cyan"
+            if ! curl_common "$download_url" \
                 --create-dirs \
                 --tcp-fastopen \
-                -o "$OUTPUT_DIRECTORY/$DOWNLOAD_DIRNAME/$DOWNLOAD_FILENAME"
+                -o "$OUTPUT_DIRECTORY/$download_dirname/$download_filename"
                 then
-                    colored_output "Failed to download $DOWNLOAD_FILENAME" "red"
+                    colored_output "Failed to download '$download_filename'" "red"
             fi
 
-        colored_output "Successfully downloaded $DOWNLOAD_FILENAME" "green"
+        colored_output "Successfully downloaded '$download_filename'" "green"
     done
 
-    for SUBFOLDER in $SUBFOLDERS
+    for subfolder in $subfolders
         do
-            sourceforge_source_download "$SF_FILES_PAGE_URL/$SUBFOLDER"
+            sourceforge_source_download "$sf_files_page_url/$subfolder"
     done
 }
 
