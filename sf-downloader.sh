@@ -88,7 +88,7 @@ sourceforge_source_download() {
 
     if [ -z "$download_urls" ];
         then
-            colored_output "Couldn't find any file names in this URL: $sf_files_page_url" "red"
+            colored_output "Couldn't find any file names in this URL: $sf_files_page_url" "yellow"
     fi
 
     for download_url in $download_urls
