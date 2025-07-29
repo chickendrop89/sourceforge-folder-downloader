@@ -14,11 +14,11 @@
 # GNU General Public License for more details.
 
 SOURCE="$1"
-SITE_ROOT="${SOURCE%%/projects/*}"
-PROJECT="${SOURCE#"$SITE_ROOT/projects/"}"
-PROJECT="${PROJECT%%/*}"
-PROJECT_FILES_ROOT="$SITE_ROOT/projects/$PROJECT/files/"
 OUTPUT_DIRECTORY="$(pwd)"
+
+SITE_ROOT="${SOURCE%%/projects/*}"
+PROJECT=$(echo "$SOURCE" | sed -E 's|.*/projects/([^/]+).*|\1|')
+PROJECT_FILES_ROOT="$SITE_ROOT/projects/$PROJECT/files/"
 
 # Check if there is a second argument/parameter
 if [ -n "$2" ]
@@ -82,14 +82,17 @@ http_status_check() {
 }
 
 sourceforge_source_download() {(
-    sf_files_page_url="$1"
-    sf_files_page_h="$(curl_common "$sf_files_page_url" -s | grep '<th scope="row" headers="files_name_h">')"
-    download_urls=$(echo "$sf_files_page_h" | sed -n 's|.*"\(https:[^"]*\).*|\1|p')
-    subfolders=$(echo "$sf_files_page_h" | sed -n 's|.*"/projects/[^/]*/files/\([^"]*\).*|\1|p')
+    page_url="$1"
+    sf_files_page_h="$(curl_common "$page_url" -s |
+                    grep '<th scope="row" headers="files_name_h">')"
+    download_urls=$(echo "$sf_files_page_h" |
+                    sed -n 's|.*"\(https:[^"]*\).*|\1|p')
+    subfolders=$(echo "$sf_files_page_h" | 
+                    sed -n 's|.*"/projects/[^/]*/files/\([^"]*\).*|\1|p')
 
     if [ -z "$download_urls" ];
         then
-            colored_output "Couldn't find any file names in this URL: $sf_files_page_url" "yellow"
+            colored_output "Couldn't find any file names in this URL: $page_url" "yellow"
     fi
 
     for download_url in $download_urls
@@ -103,7 +106,6 @@ sourceforge_source_download() {(
             # Get the relative directory name, in regard to the project's Files root directory
             download_dirname_from_root=$(cut_url "${download_url#"$PROJECT_FILES_ROOT"}" 3-)
 
-            #colored_output "Downloading '$download_filename' from '$download_dirname'" "cyan"
             colored_output "Downloading '$download_filename' from directory '$download_dirname_from_root' in project '$PROJECT'" "cyan"
             if ! curl_common "$download_url" \
                 --create-dirs \
