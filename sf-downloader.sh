@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # A folder/file SourceForge downloader for bash shell
 # Copyright (C) 2025 chickendrop89
@@ -29,8 +29,7 @@ case "$1" in
 esac
 
 # Wrapper for curl with common arguments
-curl_common() {
-    local url
+curl_common() {(
     url="$1"
     shift
 
@@ -41,15 +40,14 @@ curl_common() {
         --connect-timeout 15 \
         -L \
         "$@"
-}
+)}
 
 # Cut URL path into segments
 cut_url() {
     echo "$1" | rev | cut -d/ -f "$2" | rev
 }
 
-colored_output() {
-    local message color
+colored_output() {(
     message="$1"
     color="$2"
 
@@ -60,7 +58,7 @@ colored_output() {
         cyan)   printf "\033[36m%s\033[0m\n" "$message" ;;
         *)      printf "\n" ;;
     esac
-}
+)}
 
 # Check HTTP status of source URL before proceeding
 http_status_check() {
@@ -79,8 +77,7 @@ http_status_check() {
     esac
 }
 
-sourceforge_source_download() {
-    local sf_files_page_url sf_files_page_h download_urls download_url download_filename download_dirname subfolders subfolder
+sourceforge_source_download() {(
     sf_files_page_url="$1"
     sf_files_page_h="$(curl_common "$sf_files_page_url" -s | grep '<th scope="row" headers="files_name_h">')"
     download_urls=$(echo "$sf_files_page_h" | sed -n 's|.*"\(https:[^"]*\).*|\1|p')
@@ -115,7 +112,7 @@ sourceforge_source_download() {
         do
             sourceforge_source_download "$SOURCE/$subfolder"
     done
-}
+)}
 
 
 # Do a HTTP status check before downloading
