@@ -1,6 +1,6 @@
 # sourceforge-downloader
 
-A folder/file SourceForge downloader for the linux shell
+A recursive sourceforge folder downloader for the linux shell 
 
 ## Usage:
 ```shell

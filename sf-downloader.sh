@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# A folder/file SourceForge downloader for bash shell
+# A recursive sourceforge folder downloader for the linux shell 
 # Copyright (C) 2025 chickendrop89
 
 # This program is free software; you can redistribute it and/or
