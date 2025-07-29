@@ -14,6 +14,10 @@
 # GNU General Public License for more details.
 
 SOURCE="$1"
+SITE_ROOT="${SOURCE%%/projects/*}"
+PROJECT="${SOURCE#"$SITE_ROOT/projects/"}"
+PROJECT="${PROJECT%%/*}"
+PROJECT_FILES_ROOT="$SITE_ROOT/projects/$PROJECT/files/"
 OUTPUT_DIRECTORY="$(pwd)"
 
 # Check if there is a second argument/parameter
@@ -96,7 +100,11 @@ sourceforge_source_download() {(
             # Cut the third segment from end, which should contain the source directory
             download_dirname=$(cut_url "${download_url#"$SOURCE"}" 3-)
 
-            colored_output "Downloading '$download_filename' from '$download_dirname'" "cyan"
+            # Get the relative directory name, in regard to the project's Files root directory
+            download_dirname_from_root=$(cut_url "${download_url#"$PROJECT_FILES_ROOT"}" 3-)
+
+            #colored_output "Downloading '$download_filename' from '$download_dirname'" "cyan"
+            colored_output "Downloading '$download_filename' from directory '$download_dirname_from_root' in project '$PROJECT'" "cyan"
             if ! curl_common "$download_url" \
                 --create-dirs \
                 --tcp-fastopen \
