@@ -19,7 +19,7 @@ OUTPUT_DIRECTORY="$(pwd)"
 SITE_ROOT="${SOURCE%%/projects/*}"
 PROJECT=$(echo "$SOURCE" | sed -E 's|.*/projects/([^/]+).*|\1|')
 PROJECT_FILES_ROOT="$SITE_ROOT/projects/$PROJECT/files/"
-
+ 
 # Check if there is a second argument/parameter
 if [ -n "$2" ]
     then OUTPUT_DIRECTORY="$2"
@@ -107,7 +107,13 @@ sourceforge_source_download() {(
             # Get the relative directory name, in regard to the project's Files root directory
             download_dirname_from_root=$(cut_url "${download_url#"$PROJECT_FILES_ROOT"}" 3-)
 
-            colored_output "Downloading '$download_filename' from directory '$download_dirname_from_root' in project '$PROJECT'" "cyan"
+            if [ -z "$download_dirname_from_root" ];
+                then
+                    colored_output "Downloading '$download_filename' from the root folder of project '$PROJECT'" "cyan"
+                else
+                    colored_output "Downloading '$download_filename' from directory '$download_dirname_from_root' in project '$PROJECT'" "cyan"
+            fi
+
             if ! curl_common "$download_url" \
                 --create-dirs \
                 --tcp-fastopen \
