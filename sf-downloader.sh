@@ -15,6 +15,16 @@
 
 SOURCE="$1"
 OUTPUT_DIRECTORY="$(pwd)"
+OVERWRITE=false
+
+# Check for overwrite flag in any position
+for arg in "$@"; do
+    case "$arg" in
+        -ow|--overwrite)
+            OVERWRITE=true
+            ;;
+    esac
+done
 
 SITE_ROOT="${SOURCE%%/projects/*}"
 PROJECT=$(echo "$SOURCE" | sed -E 's|.*/projects/([^/]+).*|\1|')
@@ -27,7 +37,7 @@ fi
 
 case "$1" in
     *help*|*HELP*|"")
-        echo "usage: sf-downloader.sh <sourceforge folder url> [output directory]"
+        echo "usage: sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite]"
         exit 1
         ;;
 esac
@@ -107,19 +117,25 @@ sourceforge_source_download() {(
             # Get the relative directory name, in regard to the project's Files root directory
             download_dirname_from_root=$(cut_url "${download_url#"$PROJECT_FILES_ROOT"}" 3-)
 
-            if [ -z "$download_dirname_from_root" ];
+            output_path="$OUTPUT_DIRECTORY/$download_dirname/$download_filename"
+            
+            # Skip if file exists and overwriting is not allowed
+            if [ -f "$output_path" ] && [ "$OVERWRITE" = false ]; 
                 then
-                    colored_output "Downloading '$download_filename' from the root folder of project '$PROJECT'" "cyan"
-                else
-                    colored_output "Downloading '$download_filename' from directory '$download_dirname_from_root' in project '$PROJECT'" "cyan"
+                    colored_output "Skipping '$download_filename' - file already exists and overwriting is not allowed" "yellow"
+                    continue
+            fi
+
+            if [ -z "$download_dirname_from_root" ];
+                then colored_output "Downloading '$download_filename' from the root folder of project '$PROJECT'" "cyan"
+                else colored_output "Downloading '$download_filename' from directory '$download_dirname_from_root' in project '$PROJECT'" "cyan"
             fi
 
             if ! curl_common "$download_url" \
                 --create-dirs \
                 --tcp-fastopen \
-                -o "$OUTPUT_DIRECTORY/$download_dirname/$download_filename"
-                then
-                    colored_output "Failed to download '$download_filename'" "red"
+                -o "$output_path"
+                then colored_output "Failed to download '$download_filename'" "red"
             fi
 
         colored_output "Successfully downloaded '$download_filename'" "green"
