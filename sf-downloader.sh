@@ -88,7 +88,8 @@ sourceforge_source_download() {(
     download_urls=$(echo "$sf_files_page_h" |
                     sed -n 's|.*"\(https:[^"]*\).*|\1|p')
     subfolders=$(echo "$sf_files_page_h" | 
-                    sed -n 's|.*"/projects/[^/]*/files/\([^"]*\).*|\1|p')
+                    sed -n 's|.*"/projects/[^/]*/files/\([^"]*\).*|\1|p' |
+                    grep -v '/latest/')
 
     if [ -z "$download_urls" ];
         then
