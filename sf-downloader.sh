@@ -16,12 +16,17 @@
 SOURCE="$1"
 OUTPUT_DIRECTORY="$(pwd)"
 OVERWRITE=false
+QUIET=false
+DOWNLOAD_FAILED=false
 
 # Check for overwrite flag in any position
 for arg in "$@"; do
     case "$arg" in
         -ow|--overwrite)
             OVERWRITE=true
+            ;;
+        -q|--quiet)
+            QUIET=true
             ;;
     esac
 done
@@ -37,33 +42,49 @@ fi
 
 case "$1" in
     *help*|*HELP*|"")
-        echo "usage: sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite]"
+        echo "usage: sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] [-q, --quiet]"
         exit 1
         ;;
 esac
 
 # Wrapper for curl with common arguments
-curl_common() {(
+curl_common() {
     url="$1"
     shift
 
+    if [ $QUIET = true ];
+        then silent="-s"
+        else silent=""
+    fi
+
     curl "$url" \
+        $silent \
         --retry 3 \
         --retry-all-errors \
         --compressed \
         --connect-timeout 15 \
         -L \
         "$@"
-)}
+}
 
 # Cut URL path into segments
 cut_url() {
     echo "$1" | rev | cut -d/ -f "$2" | rev
 }
 
-colored_output() {(
+colored_output() {
     message="$1"
     color="$2"
+
+    if [ "$QUIET" = true ]; 
+        then
+            if [ "$color" = "red" ]; 
+                then DOWNLOAD_FAILED=true
+            fi
+
+            # Don't print anything
+            return
+    fi
 
     case "$color" in
         red)    printf "\033[31m%s\033[0m\n" "$message"; exit 1 ;;
@@ -72,7 +93,7 @@ colored_output() {(
         cyan)   printf "\033[36m%s\033[0m\n" "$message" ;;
         *)      printf "\n" ;;
     esac
-)}
+}
 
 # Check HTTP status of source URL before proceeding
 http_status_check() {
@@ -91,7 +112,7 @@ http_status_check() {
     esac
 }
 
-sourceforge_source_download() {(
+sourceforge_source_download() {
     page_url="$1"
     sf_files_page_h="$(curl_common "$page_url" -s |
                     grep '<th scope="row" headers="files_name_h">')"
@@ -145,7 +166,7 @@ sourceforge_source_download() {(
         do
             sourceforge_source_download "$SOURCE/$subfolder"
     done
-)}
+}
 
 
 # Do a HTTP status check before downloading
@@ -153,3 +174,7 @@ http_status_check
 
 # Download the SourceForge files
 sourceforge_source_download "$SOURCE"
+
+if [ "$QUIET" = true && "$DOWNLOAD_FAILED" = true ];
+    then exit 1
+fi
