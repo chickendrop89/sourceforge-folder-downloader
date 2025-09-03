@@ -13,23 +13,45 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #  Lesser General Public License for more details.
 
-SOURCE="$1"
+SOURCE=""
 OUTPUT_DIRECTORY="$(pwd)"
 OVERWRITE=false
 QUIET=false
-DOWNLOAD_FAILED=false
 
-# Check for overwrite flag in any position
-for arg in "$@"; do
-    case "$arg" in
+HELP_MESSAGE="usage: sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] [-q, --quiet]"
+
+# Parse arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
         -ow|--overwrite)
             OVERWRITE=true
+            shift
             ;;
         -q|--quiet)
             QUIET=true
+            shift
+            ;;
+        -h|--help|help|HELP)
+            echo "$HELP_MESSAGE"
+            exit 1
+            ;;
+        *)
+            if [ -z "$SOURCE" ]; 
+                then SOURCE="$1"
+            elif [ -z "$OUTPUT_DIRECTORY" ] || [ "$OUTPUT_DIRECTORY" = "$(pwd)" ]; 
+                then OUTPUT_DIRECTORY="$1"
+            fi
+            shift
             ;;
     esac
 done
+
+# Check if source URL was provided
+if [ -z "$SOURCE" ]; 
+    then
+        echo "$HELP_MESSAGE"
+        exit 1
+fi
 
 SITE_ROOT="${SOURCE%%/projects/*}"
 PROJECT=$(echo "$SOURCE" | sed -E 's|.*/projects/([^/]+).*|\1|')
@@ -39,13 +61,6 @@ PROJECT_FILES_ROOT="$SITE_ROOT/projects/$PROJECT/files/"
 if [ -n "$2" ]
     then OUTPUT_DIRECTORY="$2"
 fi
-
-case "$1" in
-    *help*|*HELP*|"")
-        echo "usage: sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] [-q, --quiet]"
-        exit 1
-        ;;
-esac
 
 # Wrapper for curl with common arguments
 curl_common() {
@@ -79,9 +94,8 @@ colored_output() {
     if [ "$QUIET" = true ]; 
         then
             if [ "$color" = "red" ]; 
-                then DOWNLOAD_FAILED=true
+                then exit 1
             fi
-
             # Don't print anything
             return
     fi
@@ -174,7 +188,3 @@ http_status_check
 
 # Download the SourceForge files
 sourceforge_source_download "$SOURCE"
-
-if [ "$QUIET" = true && "$DOWNLOAD_FAILED" = true ];
-    then exit 1
-fi
