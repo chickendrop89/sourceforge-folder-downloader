@@ -4,7 +4,7 @@ A recursive sourceforge folder downloader for the linux shell
 
 ## Usage:
 ```shell
-sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] [-q, --quiet]
+sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] [-nr, --no-resume] [-q, --quiet]
 ```
 
 ---
@@ -16,13 +16,14 @@ sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] 
     - example: `winscp-2.0`
 
 - `[optional] -ow, --overwrite`
-    - Whenever to overwrite files if they exist
+    - Whether to overwrite files if they exist
+    - This option will also remove any existing .part files of the requested file
 
 - `[optional] -nr, --no-resume`
-    - Whenever to not create .part files, or resume downloads if they were interrupted
+    - Whether to not create .part files, or resume downloads if they were interrupted
 
 - `[optional] -q, --quiet`
-    - Whenever to be quiet and indicate error through exit codes
+    - Whether to be quiet and indicate error through exit codes
 
 ## Requirements:
 - Basic linux utilities that are present on every system like: `sed`, `grep`, and `curl`
