@@ -174,22 +174,33 @@ sourceforge_source_download() {
             target_path="$output_path.part"
             resume_flag=""
 
-            if [ "$NO_RESUME" = true ];
-                then target_path="$output_path"
-            elif [ "$OVERWRITE" = false ] && [ -f "$output_path.part" ];
+            if [ "$NO_RESUME" = true ] || [ "$OVERWRITE" = true ]; 
+                then
+                    target_path="$output_path"
+                    rm -f "$output_path.part"
+            elif [ -f "$output_path.part" ]; 
                 then resume_flag="-C -"
             fi
 
             # shellcheck disable=SC2086
-            if ! curl_common "$download_url" \
+            curl_common "$download_url" \
                 $resume_flag \
                 --create-dirs \
                 --tcp-fastopen \
                 -o "$target_path"
+            
+            curl_res=$?
+
+            # This will happen rarely when the download is interrupted on 100%
+            if [ $curl_res -eq 33 ]; 
+                then curl_res=0
+            fi
+
+            if [ $curl_res -ne 0 ]; 
                 then colored_output "Failed to download '$download_filename'" "red"
             fi
 
-            if [ "$NO_RESUME" = false ];
+            if [ "$target_path" = "$output_path.part" ]; 
                 then mv "$output_path.part" "$output_path"
             fi
 
