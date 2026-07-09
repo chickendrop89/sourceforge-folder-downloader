@@ -18,6 +18,9 @@ sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] 
 - `[optional] -ow, --overwrite`
     - Whenever to overwrite files if they exist
 
+- `[optional] -nr, --no-resume`
+    - Whenever to not create .part files, or resume downloads if they were interrupted
+
 - `[optional] -q, --quiet`
     - Whenever to be quiet and indicate error through exit codes
 

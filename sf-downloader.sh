@@ -17,8 +17,9 @@ SOURCE=""
 OUTPUT_DIRECTORY="$(pwd)"
 OVERWRITE=false
 QUIET=false
+NO_RESUME=false
 
-HELP_MESSAGE="usage: sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] [-q, --quiet]"
+HELP_MESSAGE="usage: sf-downloader.sh <sourceforge folder url> [output directory] [-ow, --overwrite] [-nr, --no-resume] [-q, --quiet]"
 
 # Parse arguments
 while [ $# -gt 0 ]; do
@@ -29,6 +30,10 @@ while [ $# -gt 0 ]; do
             ;;
         -q|--quiet)
             QUIET=true
+            shift
+            ;;
+        -nr|--no-resume)
+            NO_RESUME=true
             shift
             ;;
         -h|--help|help|HELP)
@@ -166,11 +171,26 @@ sourceforge_source_download() {
                 else colored_output "Downloading '$download_filename' from directory '$download_dirname_from_root' in project '$PROJECT'" "cyan"
             fi
 
+            target_path="$output_path.part"
+            resume_flag=""
+
+            if [ "$NO_RESUME" = true ];
+                then target_path="$output_path"
+            elif [ "$OVERWRITE" = false ] && [ -f "$output_path.part" ];
+                then resume_flag="-C -"
+            fi
+
+            # shellcheck disable=SC2086
             if ! curl_common "$download_url" \
+                $resume_flag \
                 --create-dirs \
                 --tcp-fastopen \
-                -o "$output_path"
+                -o "$target_path"
                 then colored_output "Failed to download '$download_filename'" "red"
+            fi
+
+            if [ "$NO_RESUME" = false ];
+                then mv "$output_path.part" "$output_path"
             fi
 
         colored_output "Successfully downloaded '$download_filename'" "green"
