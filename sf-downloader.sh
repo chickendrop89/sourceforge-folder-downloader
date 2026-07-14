@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #  A recursive sourceforge folder downloader for the linux shell
-#  Copyright (C) 2025 chickendrop89
+#  Copyright (C) 2026 chkndrp
 
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
